@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class TxHandler {
 
     private UTXOPool up;
@@ -30,24 +32,24 @@ public class TxHandler {
 		
 		int index = 0;
 
-		for (Transaction.Input in : tx.GetInputs()) {
+		for (Transaction.Input in : tx.getInputs()) {
 			
 			UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
 			if (seenUTXO.contains(checkUTXO)) return false; // 3
 			
-			seenUTXO.append(checkUTXO);
+			seenUTXO.add(checkUTXO);
 			
 			if (!up.contains(checkUTXO)) return false; // 1
 			
 			inSum += up.getTxOutput(checkUTXO).value;
 			
 			// Check Signature
-			if (!up.getTxOutput(checkUTXO).address.verifySignature(in.getRawDataToSign(index), in.signature)) return false; // 2
+			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) return false; // 2
 			
 			index++;
 		}
 		
-		for (Transaction.Output out : tx.GetOutputs()) {
+		for (Transaction.Output out : tx.getOutputs()) {
 			if (out.value < 0) return false; // 4
 			outSum += out.value;
 		}
@@ -74,18 +76,18 @@ public class TxHandler {
 				if (possibleTxs[i] == null) continue;
 				if (isValidTx(possibleTxs[i])) {
 					// Remove old UTXOs from Pool
-					for (Transation.Input in : possibleTxs[i].getInputs()) {
+					for (Transaction.Input in : possibleTxs[i].getInputs()) {
 						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
 						up.removeUTXO(delUTXO);
 					}
 					
 					// Add new UTXOs to Pool
 					for(int j = 0; j < possibleTxs[i].getOutputs().size(); j++) {
-						UTXO newUTXO = new UXTO(possibleTxs[i].getHash(), j);
+						UTXO newUTXO = new UTXO(possibleTxs[i].getHash(), j);
 						up.addUTXO(newUTXO, possibleTxs[i].getOutputs().get(j));
 					}
 					
-					goodTx.append(possibleTxs[i]);
+					goodTx.add(possibleTxs[i]);
 					
 					// Set Array Element to Null
 					possibleTxs[i] = null;
@@ -96,7 +98,7 @@ public class TxHandler {
 			}
 		}
 		
-		return goodTx.toArray();
+		return (Transaction[])goodTx.toArray();
 	}
 
 }
