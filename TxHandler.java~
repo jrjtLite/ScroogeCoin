@@ -74,7 +74,6 @@ public class TxHandler {
 				if (possibleTxs[i] == null) continue;
 				if (isValidTx(possibleTxs[i])) {
 					// Remove old UTXOs from Pool
-					
 					for (Transation.Input in : possibleTxs[i].getInputs()) {
 						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
 						up.removeUTXO(delUTXO);
@@ -82,14 +81,18 @@ public class TxHandler {
 					
 					// Add new UTXOs to Pool
 					for(int j = 0; j < possibleTxs[i].getOutputs().size(); j++) {
-						
+						UTXO newUTXO = new UXTO(possibleTxs[i].getHash(), j);
+						up.addUTXO(newUTXO, possibleTxs[i].getOutputs().get(j));
 					}
-						
+					
+					// Set Array Element to Null
+					possibleTxs[i] = null;
+					
+					// Not Done Yet!
 					isDone = false;
 				}
 			}
 		}
-		
 		
 		return null;
 	}
