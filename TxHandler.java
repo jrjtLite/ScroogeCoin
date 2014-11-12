@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 
 public class TxHandler {
 
@@ -117,6 +119,10 @@ public class TxHandler {
 	 * and updating the current UTXO pool as appropriate.
 	 */
 	public Transaction[] handleTxs(Transaction[] possibleTxs) {
+		return basicHandleTxs(possibleTxs);
+	}
+	
+	public Transaction[] basicHandleTxs(Transaction[] possibleTxs) {
 		ArrayList<Transaction> goodTx = new ArrayList<Transaction>();
 		
 		boolean isDone = false;
@@ -153,42 +159,50 @@ public class TxHandler {
 		return (Transaction[])goodTx.toArray();
 	}
 	
+	/*
+	 * Improvement: once it's invalid (not potentially valid), 
+	 *  don't look at it again
+	 */
 	public Transaction[] handleTxs2(Transaction[] possibleTxs) {
 		
-		ArrayList<Transaction> goodTx = new ArrayList<Transaction>();
+		ArrayList<Transaction> potGoodTxs = new ArrayList<Transaction>(Arrays.asList(possibleTxs));
+		ArrayList<Transaction> goodTxs = new ArrayList<Transaction>();
 		
 		boolean isDone = false;
 		
 		while (!isDone) {
 			isDone = true;
-			
-			for (int i = 0; i < possibleTxs.length; i++) {
-				if (possibleTxs[i] == null) continue;
-				if (isValidTx(possibleTxs[i])) {
-					// Remove old UTXOs from Pool
-					for (Transaction.Input in : possibleTxs[i].getInputs()) {
+			Iterator<Transaction> i = potGoodTxs.iterator();
+			while (i.hasNext()) {
+				//if (possibleTxs[i] == null) continue;
+				//don't need to check this
+				Transaction nextTx = i.next();
+				switch (classifyTx(i.next())) {
+				case VALID: 
+					for (Transaction.Input in : nextTx.getInputs()) {
 						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
 						up.removeUTXO(delUTXO);
 					}
 					
 					// Add new UTXOs to Pool
-					for(int j = 0; j < possibleTxs[i].getOutputs().size(); j++) {
-						UTXO newUTXO = new UTXO(possibleTxs[i].getHash(), j);
-						up.addUTXO(newUTXO, possibleTxs[i].getOutputs().get(j));
+					for(int j = 0; j < nextTx.getOutputs().size(); j++) {
+						UTXO newUTXO = new UTXO(nextTx.getHash(), j);
+						up.addUTXO(newUTXO, nextTx.getOutputs().get(j));
 					}
 					
-					goodTx.add(possibleTxs[i]);
-					
-					// Set Array Element to Null
-					possibleTxs[i] = null;
-					
-					// Not Done Yet!
-					isDone = false;
+					goodTxs.add(nextTx);
+					i.remove();
+					isDone=false;
+					break;
+				case INVALID:
+					i.remove();
+				//case POT_VALID:
+					//don't need to do anything if potentially valid.
 				}
 			}
 		}
 		
-		return (Transaction[])goodTx.toArray();
+		return (Transaction[])goodTxs.toArray();
 	}
 
 }
