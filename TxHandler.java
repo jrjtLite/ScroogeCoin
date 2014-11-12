@@ -23,8 +23,8 @@ public class TxHandler {
 	 * (1) all outputs claimed by tx are in the current UTXO pool, 
 	 * (2) the signatures on each input of tx are valid, 
 	 * (3) no UTXO is claimed multiple times by tx, 
-	 * (4) all of tx’s output values are non-negative, and
-	 * (5) the sum of tx’s input values is greater than or equal to the sum of   
+	 * (4) all of tx's output values are non-negative, and
+	 * (5) the sum of tx's input values is greater than or equal to the sum of   
 	        its output values;
 	   and false otherwise.
 	 */
@@ -203,6 +203,54 @@ public class TxHandler {
 		}
 		
 		return (Transaction[])goodTxs.toArray();
+	}
+	
+	//node for graph
+	
+	public class TxWrapper {
+		private Transaction tx;
+		private ArrayList<Transaction> refs;
+		public TxWrapper(Transaction tx, ArrayList<Transaction> refs) {
+		    this.setTx(tx);
+		    this.setRefs(refs);
+		}
+		public Transaction getTx() {
+			return tx;
+		}
+		public void setTx(Transaction tx) {
+			this.tx = tx;
+		}
+		public ArrayList<Transaction> getRefs() {
+			return refs;
+		}
+		public void setRefs(ArrayList<Transaction> refs) {
+			this.refs = refs;
+		}
+	}
+	
+	public Transaction[] graphHandleTxs(Transaction[] possibleTxs) {
+		
+		//Plan
+		// (1) first create a hash to transaction table for possibleTxs
+		/* (2) for each transaction, if it's invalid, then kill it. 
+		 *  If all inputs are in UTXOPool, add it to nbrsOfGood. 
+		 *  For each input, add that transaction to the "refs" list 
+		 *  of the referenced address.
+		 * (3) order potGoodTxs by transaction fee (make txFee a method).
+		 *  Repeat until potGoodTxs is empty: take the transaction tx with maximum fee in 
+		 *  nbrsOfGood and if
+		 *  it's valid, then put it in UTXOPool.
+		 *  Take any transactions that attempt to double-spend the addresses just spent
+		 *  and delete them from potGoodTxs (optional).
+		 *   Check neighbors of tx; if they are valid put them into nbrsOfGood.
+		 *  Now 
+		 */
+		
+		
+		ArrayList<Transaction> nbrsOfGood= new ArrayList<Transaction>();
+		
+		
+		return null;
 	}
 
 }
