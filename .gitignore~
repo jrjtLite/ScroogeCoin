@@ -1,0 +1,12 @@
+# Complied source #
+###################
+
+*.hi
+*.o
+
+# Miscellaneous files #
+#######################
+
+*.txt
+*.*~
+SourceGraph
