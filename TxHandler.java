@@ -8,7 +8,7 @@ public class TxHandler {
 	 */
 	public TxHandler(UTXOPool utxoPool) {
 		// IMPLEMENT THIS
-	    up = mew UTXOPool(utxoPool);
+	    up = new UTXOPool(utxoPool);
 	}
 
 	/* Returns true if 
@@ -85,6 +85,8 @@ public class TxHandler {
 						up.addUTXO(newUTXO, possibleTxs[i].getOutputs().get(j));
 					}
 					
+					goodTx.append(possibleTxs[i]);
+					
 					// Set Array Element to Null
 					possibleTxs[i] = null;
 					
@@ -94,7 +96,7 @@ public class TxHandler {
 			}
 		}
 		
-		return null;
+		return goodTx.toArray();
 	}
 
 }
