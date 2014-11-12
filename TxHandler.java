@@ -8,7 +8,7 @@ public class TxHandler {
 	 */
 	public TxHandler(UTXOPool utxoPool) {
 		// IMPLEMENT THIS
-	    up = mew UTXOPool(utxoPool);
+	    up = new UTXOPool(utxoPool);
 	}
 
 	/* Returns true if 
