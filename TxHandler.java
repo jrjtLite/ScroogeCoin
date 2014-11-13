@@ -159,7 +159,9 @@ public class TxHandler {
 			}
 		}
 		
-		return (Transaction[])goodTx.toArray();
+		Transaction[] tArr = new Transaction[goodTx.size()];
+		tArr = goodTx.toArray(tArr);
+		return tArr;
 	}
 	
 	/*
