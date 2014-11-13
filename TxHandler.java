@@ -281,6 +281,7 @@ public class TxHandler {
 		    this.setTx(tx);
 		    this.setFee(fee);
 		    this.setValidity(validity);
+		    this.refs = new ArrayList<TxWrapper>();
 		}
 		public Transaction getTx() {
 			return tx;
@@ -290,9 +291,6 @@ public class TxHandler {
 		}
 		public ArrayList<TxWrapper> getRefs() {
 			return refs;
-		}
-		public void setRefs(ArrayList<TxWrapper> refs) {
-			this.refs = refs;
 		}
 		public int compareTo(TxWrapper tx2) {
 			return Double.compare(fee,tx2.getFee());
