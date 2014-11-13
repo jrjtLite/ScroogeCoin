@@ -372,7 +372,6 @@ public class TxHandler {
 			switch (wrapped.getValidity()) {
 			case VALID:
 				nbrsOfGood.add(wrapped);
-				goodTxs.add(tx);
 				break;
 			case POT_VALID:
 				potGoodTxs.add(wrapped);
