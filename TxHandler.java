@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
@@ -115,6 +116,64 @@ public class TxHandler {
 		
 		return result;
 	}
+	
+	/*
+	 * classifies transaction AND creates a wrapper.
+	 */
+	public TxWrapper wrapTx(Transaction tx) {
+	    int result = VALID;
+		ArrayList<UTXO> seenUTXO = new ArrayList<UTXO>();
+		
+		double inSum = 0;
+		double outSum = 0;
+		
+		int index = 0;
+
+		for (Transaction.Input in : tx.getInputs()) {
+			
+			UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
+			if (seenUTXO.contains(checkUTXO)) return null; // 3
+			//no UTXO is claimed multiple times by tx
+			
+			seenUTXO.add(checkUTXO);
+			//if the transaction pool doesn't contain it already
+			if (!up.contains(checkUTXO)) {
+				result = POT_VALID;
+			} // 1
+			
+			inSum += up.getTxOutput(checkUTXO).value;
+			
+			// Check Signature
+			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
+				return null; // 2
+			
+			index++;
+		}
+		
+		for (Transaction.Output out : tx.getOutputs()) {
+			if (out.value < 0) return null; // 4
+			outSum += out.value;
+		}
+		
+		if (outSum > inSum) return null; // 5
+		
+		return new TxWrapper(new Transaction(tx), inSum - outSum, result);
+	}
+	
+	//this only checks if all the inputs are in the UTXO pool
+	public int quickCheck(Transaction tx) {
+		for (Transaction.Input in : tx.getInputs()) {
+			
+			UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
+			
+			//if the transaction pool doesn't contain it already
+			if (!up.contains(checkUTXO)) {
+				return POT_VALID;
+			} 
+
+		}
+		return VALID;
+	}
 
 	/* Handles each epoch by receiving an unordered array of proposed 
 	 * transactions, checking each transaction for correctness, 
@@ -216,9 +275,11 @@ public class TxHandler {
 		private Transaction tx;
 		private ArrayList<TxWrapper> refs;
 		private double fee;
-		public TxWrapper(Transaction tx, ArrayList<TxWrapper> refs) {
+		private int validity;
+		public TxWrapper(Transaction tx, double fee, int validity) {
 		    this.setTx(tx);
-		    this.setRefs(refs);
+		    this.setFee(fee);
+		    this.setValidity(validity);
 		}
 		public Transaction getTx() {
 			return tx;
@@ -233,9 +294,22 @@ public class TxHandler {
 			this.refs = refs;
 		}
 		public int compareTo(TxWrapper tx2) {
-			//implement me
-			//use transaction fees
-			return 0;
+			return Double.compare(fee,tx2.getFee());
+		}
+		public double getFee() {
+			return fee;
+		}
+		public void setFee(double fee) {
+			this.fee = fee;
+		}
+		public int getValidity() {
+			return validity;
+		}
+		public void setValidity(int validity) {
+			this.validity = validity;
+		}
+		public void addRef(TxWrapper tx2) {
+			refs.add(tx2);
 		}
 	}
 	
@@ -286,39 +360,69 @@ public class TxHandler {
 		 *   Check neighbors of tx; if they are valid put them into nbrsOfGood.
 		 *   
 		 */
-		HashMap<byte[], Transaction> hashToTx = new HashMap<byte[], Transaction>();
+		HashMap<byte[], TxWrapper> hashToTx = new HashMap<byte[], TxWrapper>();
 		PriorityQueue<TxWrapper> nbrsOfGood= new PriorityQueue<TxWrapper>();
 		ArrayList<TxWrapper> potGoodTxs = new ArrayList<TxWrapper>();
+		ArrayList<Transaction> goodTxs = new ArrayList<Transaction>();
 		
 		for (Transaction tx : possibleTxs) {
-			switch (classifyTx(tx)) {
+			TxWrapper wrapped = wrapTx(tx);
+			if (wrapped==null) continue;//we don't put this in the set.
+			hashToTx.put(tx.getHash(), wrapped);
+			
+			switch (wrapped.getValidity()) {
 			case VALID:
-				//nbrsOfGood.add(new TxWrapper(tx));
+				nbrsOfGood.add(wrapped);
+				goodTxs.add(tx);
 				break;
 			case POT_VALID:
-				//potGoodTxs.add(tx);
+				potGoodTxs.add(wrapped);
 				break;
 			//case INVALID: 
 			//do nothing
 			}
 		}
 		
+		for (TxWrapper wrapped : potGoodTxs) {
+			for (Transaction.Input in : wrapped.getTx().getInputs()) {
+				byte[] hash = in.prevTxHash;
+				TxWrapper origin = hashToTx.get(hash);
+				if (origin == null) {
+					break;
+					//can do another check to see if we can actually remove this
+					// but it's not a big deal.
+				}
+				origin.addRef(wrapped);
+			}
+		}
+		
 		while (!nbrsOfGood.isEmpty()) {
 			TxWrapper top = nbrsOfGood.poll();
+			//argh, I should actually check this at (*) below
+			if (quickCheck(top.getTx())!=VALID) continue;
+			
+			goodTxs.add(top.getTx());
 			//reuse code
 			for(int j = 0; j < top.getTx().getOutputs().size(); j++) {
 				UTXO newUTXO = new UTXO(top.getTx().getHash(), j);
 				up.addUTXO(newUTXO, top.getTx().getOutputs().get(j));
 			}
-			//now destroy all things that were invalidated.
-			//...
+			
+			//now destroy all things that were invalidated. (*)
+			// skip this for now
+			
 			for(TxWrapper nbr: top.getRefs()) {
+				if (quickCheck(nbr.getTx())==VALID) {
+					nbrsOfGood.add(nbr);
+				}
 				//if nbr is valid
 				//then add it to nbrsOfGood
 			}
 		}
 		
-		return null;
+		Transaction[] tArr = new Transaction[goodTxs.size()];
+		tArr = goodTxs.toArray(tArr);
+		return tArr;
 	}
-
+	
 }
