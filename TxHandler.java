@@ -1,6 +1,9 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.PriorityQueue;
 
 public class TxHandler {
 
@@ -207,10 +210,11 @@ public class TxHandler {
 	
 	//node for graph
 	
-	public class TxWrapper {
+	public class TxWrapper implements Comparable<TxWrapper> {
 		private Transaction tx;
-		private ArrayList<Transaction> refs;
-		public TxWrapper(Transaction tx, ArrayList<Transaction> refs) {
+		private ArrayList<TxWrapper> refs;
+		private double fee;
+		public TxWrapper(Transaction tx, ArrayList<TxWrapper> refs) {
 		    this.setTx(tx);
 		    this.setRefs(refs);
 		}
@@ -220,13 +224,48 @@ public class TxHandler {
 		public void setTx(Transaction tx) {
 			this.tx = tx;
 		}
-		public ArrayList<Transaction> getRefs() {
+		public ArrayList<TxWrapper> getRefs() {
 			return refs;
 		}
-		public void setRefs(ArrayList<Transaction> refs) {
+		public void setRefs(ArrayList<TxWrapper> refs) {
 			this.refs = refs;
 		}
+		public int compareTo(TxWrapper tx2) {
+			//implement me
+			//use transaction fees
+			return 0;
+		}
 	}
+	
+//	public double txFee(Transaction tx) {
+//		double inSum=0;
+//		for (Transaction.Input in : tx.getInputs()) {
+//			
+//			inSum += up.getTxOutput(checkUTXO).value;
+//			
+//			// Check Signature
+//			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
+//				return INVALID; // 2
+//			
+//			index++;
+//		}
+//		
+//		for (Transaction.Output out : tx.getOutputs()) {
+//			if (out.value < 0) return INVALID; // 4
+//			outSum += out.value;
+//		}
+//		
+//		if (outSum > inSum) return INVALID; // 5
+//	}
+//	
+//	public class TxFeeComparator implements Comparator<Transaction> {
+//
+//		public int compare(Transaction t1, Transaction t2) {
+//			// TODO Auto-generated method stub
+//			return 0;
+//		}
+//		
+//	}
 	
 	public Transaction[] graphHandleTxs(Transaction[] possibleTxs) {
 		
@@ -243,12 +282,39 @@ public class TxHandler {
 		 *  Take any transactions that attempt to double-spend the addresses just spent
 		 *  and delete them from potGoodTxs (optional).
 		 *   Check neighbors of tx; if they are valid put them into nbrsOfGood.
-		 *  Now 
+		 *   
 		 */
+		HashMap<byte[], Transaction> hashToTx = new HashMap<byte[], Transaction>();
+		PriorityQueue<TxWrapper> nbrsOfGood= new PriorityQueue<TxWrapper>();
+		ArrayList<TxWrapper> potGoodTxs = new ArrayList<TxWrapper>();
 		
+		for (Transaction tx : possibleTxs) {
+			switch (classifyTx(tx)) {
+			case VALID:
+				//nbrsOfGood.add(new TxWrapper(tx));
+				break;
+			case POT_VALID:
+				//potGoodTxs.add(tx);
+				break;
+			//case INVALID: 
+			//do nothing
+			}
+		}
 		
-		ArrayList<Transaction> nbrsOfGood= new ArrayList<Transaction>();
-		
+		while (!nbrsOfGood.isEmpty()) {
+			TxWrapper top = nbrsOfGood.poll();
+			//reuse code
+			for(int j = 0; j < top.getTx().getOutputs().size(); j++) {
+				UTXO newUTXO = new UTXO(top.getTx().getHash(), j);
+				up.addUTXO(newUTXO, top.getTx().getOutputs().get(j));
+			}
+			//now destroy all things that were invalidated.
+			//...
+			for(TxWrapper nbr: top.getRefs()) {
+				//if nbr is valid
+				//then add it to nbrsOfGood
+			}
+		}
 		
 		return null;
 	}
