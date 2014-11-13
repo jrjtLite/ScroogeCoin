@@ -181,7 +181,8 @@ public class TxHandler {
 	 * and updating the current UTXO pool as appropriate.
 	 */
 	public Transaction[] handleTxs(Transaction[] possibleTxs) {
-		return basicHandleTxs(possibleTxs);
+		//return basicHandleTxs(possibleTxs);
+		return greedyHandleTxs(possibleTxs);
 	}
 	
 	public Transaction[] basicHandleTxs(Transaction[] possibleTxs) {
@@ -343,7 +344,7 @@ public class TxHandler {
 //		
 //	}
 	
-	public Transaction[] graphHandleTxs(Transaction[] possibleTxs) {
+	public Transaction[] greedyHandleTxs(Transaction[] possibleTxs) {
 		
 		//Plan
 		// (1) first create a hash to transaction table for possibleTxs
