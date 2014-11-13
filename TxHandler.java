@@ -426,4 +426,104 @@ public class TxHandler {
 		return tArr;
 	}
 	
+	public class TxHandlerState implements Comparable<TxHandlerState>{
+		public TxHandler handler;
+		public PriorityQueue<TxWrapper> nbrsOfGood;
+		public ArrayList<TxWrapper> potGoodTxs;
+		public ArrayList<Transaction> goodTxs;
+		public double fees;
+		public TxHandlerState(TxHandler th) {
+			//to save time, TxHandler should have the UTXOPool scraped 
+			//of unnecessary transactions.
+			handler = th;
+			nbrsOfGood = new PriorityQueue<TxWrapper>();
+			potGoodTxs = new ArrayList<TxWrapper>();
+			goodTxs = new ArrayList<Transaction>();
+			fees = 0;
+		}
+		//add a copy constructor!
+		
+		@Override
+		public int compareTo(TxHandlerState t) {
+			return Double.compare(fees,t.fees);
+		}
+		
+	}
+	
+	public class TxSearch extends HeuristicSearch<TxHandlerState> {
+
+		public TxSearch(TxHandlerState e) {
+			super(e);
+		}
+
+		@Override
+		boolean test(TxHandlerState e) {
+			return (e.nbrsOfGood.isEmpty());
+		}
+
+		@Override
+		ArrayList<TxHandlerState> children(TxHandlerState e) {
+			// TODO Auto-generated method stub
+			return null;
+			//first pass through and add all SAFE transactions
+			// (do this as long as there are more transactions to add)
+			// (define a method isSafe)
+			
+			//then take the biggest and create 2 TxHandlerStates: one with it
+			//inside and one without.
+			
+		}
+		
+	}
+	
+	public abstract class HeuristicSearch<E extends Comparable<E>> {
+		
+		//protected abstract E state;
+		
+		abstract boolean test(E e);
+		
+		abstract ArrayList<E> children(E e);
+		
+		protected PriorityQueue<E> options;	
+		
+		public HeuristicSearch(E e) {
+			options = new PriorityQueue<E>();
+			options.add(e);
+		}
+		//Collections.reverseOrder
+		public HeuristicSearch(E e, Comparator<E> c) {
+			options = new PriorityQueue<E>(11, c);
+			options.add(e);
+		}
+		
+		//trying to minimize the heuristic
+		public E heuristicMinDFS() {
+			while (!options.isEmpty()) {
+				E top = options.poll();
+				if (test(top)) {
+					return top;
+				}
+				options.addAll(children(top));
+			}
+			return null;//solution not found
+		}
+
+		//trying to maximize the heuristic
+		//DO: add a time!
+		E heuristicMaxDFS(int ms) {
+			E best = null;
+			while (!options.isEmpty()) {
+				E top = options.poll();
+				if (test(top)) {
+					if ((best == null) || (top.compareTo(best)==1)) {
+						best = top;
+					}
+				} else {
+					options.addAll(children(top));
+				}
+			}
+			return best;//solution not found
+		}
+	}
+	
 }
