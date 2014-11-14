@@ -250,7 +250,7 @@ public class TxHandler {
 					}
 					
 					// Remove old UTXOs from Pool
-					for (Transaction.Input in : possibleTxs[i].getInputs()) {
+					for (Transaction.Input in : nextTx.getInputs()) {
 						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
 						up.removeUTXO(delUTXO);
 					}
