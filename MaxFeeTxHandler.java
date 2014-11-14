@@ -142,10 +142,10 @@ public class MaxFeeTxHandler {
 				inSum = -1;
 			} else {
 				inSum += up.getTxOutput(checkUTXO).value;
+				if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
+					return null; // 2
 			}
 			// Check Signature
-			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
-				return null; // 2
 			
 			index++;
 		}
@@ -164,6 +164,7 @@ public class MaxFeeTxHandler {
 	public int quickCheck(TxWrapper wrapped) {
 		Transaction tx = wrapped.getTx();
 		double inSum=0;
+		int index = 0;
 		for (Transaction.Input in : tx.getInputs()) {
 			
 			UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
@@ -172,8 +173,11 @@ public class MaxFeeTxHandler {
 			if (!up.contains(checkUTXO)) {
 				return POT_VALID;
 			} 
+			
+			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
+				return INVALID; // 2
 			inSum += up.getTxOutput(checkUTXO).value;
-
+			index ++;
 		}
 		wrapped.setFee(wrapped.getFee() - inSum);
 		return VALID;
@@ -356,6 +360,11 @@ public class MaxFeeTxHandler {
 		while (!nbrsOfGood.isEmpty()) {
 			TxWrapper top = nbrsOfGood.poll();
 			//argh, I should actually check this at (*) below
+			
+//			switch (quickCheck(top)) {
+//			case INVALID:
+//				
+//			}
 			if (quickCheck(top)!=VALID) continue;
 			
 			goodTxs.add(top.getTx());
