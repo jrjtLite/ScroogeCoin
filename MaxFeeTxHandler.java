@@ -139,10 +139,10 @@ public class MaxFeeTxHandler {
 			//if the transaction pool doesn't contain it already
 			if (!up.contains(checkUTXO)) {
 				result = POT_VALID;
-			} // 1
-			
-			inSum += up.getTxOutput(checkUTXO).value;
-			
+				inSum = -1;
+			} else {
+				inSum += up.getTxOutput(checkUTXO).value;
+			}
 			// Check Signature
 			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
 				return null; // 2
@@ -155,13 +155,15 @@ public class MaxFeeTxHandler {
 			outSum += out.value;
 		}
 		
-		if (outSum > inSum) return null; // 5
+		if (inSum != -1 && outSum > inSum) return null; // 5
 		
 		return new TxWrapper(new Transaction(tx), inSum - outSum, result);
 	}
 	
 	//this only checks if all the inputs are in the UTXO pool
-	public int quickCheck(Transaction tx) {
+	public int quickCheck(TxWrapper wrapped) {
+		Transaction tx = wrapped.getTx();
+		double inSum=0;
 		for (Transaction.Input in : tx.getInputs()) {
 			
 			UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
@@ -170,8 +172,10 @@ public class MaxFeeTxHandler {
 			if (!up.contains(checkUTXO)) {
 				return POT_VALID;
 			} 
+			inSum += up.getTxOutput(checkUTXO).value;
 
 		}
+		wrapped.setFee(wrapped.getFee() - inSum);
 		return VALID;
 	}
 
@@ -352,7 +356,7 @@ public class MaxFeeTxHandler {
 		while (!nbrsOfGood.isEmpty()) {
 			TxWrapper top = nbrsOfGood.poll();
 			//argh, I should actually check this at (*) below
-			if (quickCheck(top.getTx())!=VALID) continue;
+			if (quickCheck(top)!=VALID) continue;
 			
 			goodTxs.add(top.getTx());
 			// Remove old UTXOs from Pool
@@ -370,7 +374,7 @@ public class MaxFeeTxHandler {
 			// skip this for now
 			
 			for(TxWrapper nbr: top.getRefs()) {
-				if (quickCheck(nbr.getTx())==VALID) {
+				if (quickCheck(nbr)==VALID) {
 					nbrsOfGood.add(nbr);
 				}
 				//if nbr is valid
