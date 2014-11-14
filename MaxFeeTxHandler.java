@@ -224,56 +224,6 @@ public class MaxFeeTxHandler {
 		return tArr;
 	}
 	
-	/*
-	 * Improvement: once it's invalid (not potentially valid), 
-	 *  don't look at it again
-	 */
-	public Transaction[] handleTxs2(Transaction[] possibleTxs) {
-		
-		ArrayList<Transaction> potGoodTxs = new ArrayList<Transaction>(Arrays.asList(possibleTxs));
-		ArrayList<Transaction> goodTxs = new ArrayList<Transaction>();
-		
-		boolean isDone = false;
-		
-		while (!isDone) {
-			isDone = true;
-			Iterator<Transaction> i = potGoodTxs.iterator();
-			while (i.hasNext()) {
-				//if (possibleTxs[i] == null) continue;
-				//don't need to check this
-				Transaction nextTx = i.next();
-				switch (classifyTx(i.next())) {
-				case VALID: 
-					for (Transaction.Input in : nextTx.getInputs()) {
-						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
-						up.removeUTXO(delUTXO);
-					}
-					
-					// Remove old UTXOs from Pool
-					for (Transaction.Input in : nextTx.getInputs()) {
-						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
-						up.removeUTXO(delUTXO);
-					}
-					// Add new UTXOs to Pool
-					for(int j = 0; j < nextTx.getOutputs().size(); j++) {
-						UTXO newUTXO = new UTXO(nextTx.getHash(), j);
-						up.addUTXO(newUTXO, nextTx.getOutputs().get(j));
-					}
-					
-					goodTxs.add(nextTx);
-					i.remove();
-					isDone=false;
-					break;
-				case INVALID:
-					i.remove();
-				//case POT_VALID:
-					//don't need to do anything if potentially valid.
-				}
-			}
-		}
-		
-		return (Transaction[])goodTxs.toArray();
-	}
 	
 	//node for graph
 	
@@ -405,6 +355,11 @@ public class MaxFeeTxHandler {
 			if (quickCheck(top.getTx())!=VALID) continue;
 			
 			goodTxs.add(top.getTx());
+			// Remove old UTXOs from Pool
+			for (Transaction.Input in : top.getTx().getInputs()) {
+				UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
+				up.removeUTXO(delUTXO);
+			}
 			//reuse code
 			for(int j = 0; j < top.getTx().getOutputs().size(); j++) {
 				UTXO newUTXO = new UTXO(top.getTx().getHash(), j);
