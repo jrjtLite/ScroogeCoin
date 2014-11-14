@@ -348,7 +348,9 @@ public class TxHandler {
 			for (Transaction.Input in : wrapped.getTx().getInputs()) {
 				byte[] hash = in.prevTxHash;
 				TxWrapper origin = hashToTx.get(hash);
-				if (origin == null) {
+				UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
+				
+				if (origin == null && (!up.contains(checkUTXO))) {
 					break;
 					//can do another check to see if we can actually remove this
 					// but it's not a big deal.
