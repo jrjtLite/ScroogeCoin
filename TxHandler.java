@@ -249,6 +249,11 @@ public class TxHandler {
 						up.removeUTXO(delUTXO);
 					}
 					
+					// Remove old UTXOs from Pool
+					for (Transaction.Input in : possibleTxs[i].getInputs()) {
+						UTXO delUTXO = new UTXO(in.prevTxHash, in.outputIndex);
+						up.removeUTXO(delUTXO);
+					}
 					// Add new UTXOs to Pool
 					for(int j = 0; j < nextTx.getOutputs().size(); j++) {
 						UTXO newUTXO = new UTXO(nextTx.getHash(), j);
