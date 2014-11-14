@@ -139,13 +139,13 @@ public class TxHandler {
 			//if the transaction pool doesn't contain it already
 			if (!up.contains(checkUTXO)) {
 				result = POT_VALID;
-			} // 1
-			
-			inSum += up.getTxOutput(checkUTXO).value;
-			
+				inSum = -1;
+			} else {
+				inSum += up.getTxOutput(checkUTXO).value;
+				if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
+					return null; // 2
+			}
 			// Check Signature
-			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
-				return null; // 2
 			
 			index++;
 		}
@@ -155,13 +155,16 @@ public class TxHandler {
 			outSum += out.value;
 		}
 		
-		if (outSum > inSum) return null; // 5
+		if (inSum != -1 && outSum > inSum) return null; // 5
 		
 		return new TxWrapper(new Transaction(tx), inSum - outSum, result);
 	}
 	
 	//this only checks if all the inputs are in the UTXO pool
-	public int quickCheck(Transaction tx) {
+	public int quickCheck(TxWrapper wrapped) {
+		Transaction tx = wrapped.getTx();
+		double inSum=0;
+		int index = 0;
 		for (Transaction.Input in : tx.getInputs()) {
 			
 			UTXO checkUTXO = new UTXO(in.prevTxHash, in.outputIndex);
@@ -170,8 +173,13 @@ public class TxHandler {
 			if (!up.contains(checkUTXO)) {
 				return POT_VALID;
 			} 
-
+			
+			if (!up.getTxOutput(checkUTXO).address.verifySignature(tx.getRawDataToSign(index), in.signature)) 
+				return INVALID; // 2
+			inSum += up.getTxOutput(checkUTXO).value;
+			index ++;
 		}
+		wrapped.setFee(wrapped.getFee() - inSum);
 		return VALID;
 	}
 
@@ -352,7 +360,12 @@ public class TxHandler {
 		while (!nbrsOfGood.isEmpty()) {
 			TxWrapper top = nbrsOfGood.poll();
 			//argh, I should actually check this at (*) below
-			if (quickCheck(top.getTx())!=VALID) continue;
+			
+//			switch (quickCheck(top)) {
+//			case INVALID:
+//				
+//			}
+			if (quickCheck(top)!=VALID) continue;
 			
 			goodTxs.add(top.getTx());
 			// Remove old UTXOs from Pool
@@ -370,7 +383,7 @@ public class TxHandler {
 			// skip this for now
 			
 			for(TxWrapper nbr: top.getRefs()) {
-				if (quickCheck(nbr.getTx())==VALID) {
+				if (quickCheck(nbr)==VALID) {
 					nbrsOfGood.add(nbr);
 				}
 				//if nbr is valid
@@ -421,6 +434,8 @@ public class TxHandler {
 		@Override
 		ArrayList<TxHandlerState> children(TxHandlerState e) {
 			// TODO Auto-generated method stub
+			
+			
 			return null;
 			//first pass through and add all SAFE transactions
 			// (do this as long as there are more transactions to add)

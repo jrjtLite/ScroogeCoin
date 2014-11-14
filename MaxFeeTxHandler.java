@@ -434,6 +434,8 @@ public class MaxFeeTxHandler {
 		@Override
 		ArrayList<TxHandlerState> children(TxHandlerState e) {
 			// TODO Auto-generated method stub
+			
+			
 			return null;
 			//first pass through and add all SAFE transactions
 			// (do this as long as there are more transactions to add)
