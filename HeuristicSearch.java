@@ -1,10 +1,9 @@
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
-
 public abstract class HeuristicSearch<E extends Comparable<E>> {
 	
-	abstract E getData();
+	//protected abstract E state;
 	
 	abstract boolean test(E e);
 	
@@ -36,9 +35,10 @@ public abstract class HeuristicSearch<E extends Comparable<E>> {
 
 	//trying to maximize the heuristic
 	//DO: add a time!
-	E heuristicMaxDFS(int ms) {
+	E heuristicMaxDFS(long ms) {
 		E best = null;
-		while (!options.isEmpty()) {
+		long startTime = System.nanoTime();
+		while (!options.isEmpty() && System.nanoTime()-startTime<1000*ms) {
 			E top = options.poll();
 			if (test(top)) {
 				if ((best == null) || (top.compareTo(best)==1)) {
@@ -48,7 +48,6 @@ public abstract class HeuristicSearch<E extends Comparable<E>> {
 				options.addAll(children(top));
 			}
 		}
-		return best;//solution not found
+		return best;
 	}
-
 }
